@@ -1,0 +1,12 @@
+CREATE TABLE inventory (
+    id UUID PRIMARY KEY,
+    product_id UUID NOT NULL UNIQUE,
+    quantity_available INTEGER NOT NULL DEFAULT 0,
+    quantity_reserved INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE processed_events (
+    event_id VARCHAR(255) PRIMARY KEY,
+    processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

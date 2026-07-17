@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public class OrderEvent {
     private UUID orderId;
+    private UUID userId;
     private List<OrderItem> items;
 
     public static class OrderItem {
@@ -24,6 +25,8 @@ public class OrderEvent {
 
     public UUID getOrderId() { return orderId; }
     public void setOrderId(UUID orderId) { this.orderId = orderId; }
+    public UUID getUserId() { return userId; }
+    public void setUserId(UUID userId) { this.userId = userId; }
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
 }

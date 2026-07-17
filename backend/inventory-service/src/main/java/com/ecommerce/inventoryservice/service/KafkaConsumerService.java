@@ -5,6 +5,7 @@ import com.ecommerce.inventoryservice.dto.event.OrderCreatedEvent;
 import com.ecommerce.inventoryservice.dto.event.OrderEvent;
 import com.ecommerce.inventoryservice.exception.InventoryException;
 import com.ecommerce.inventoryservice.repository.ProcessedEventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -18,58 +19,70 @@ public class KafkaConsumerService {
     private final InventoryService inventoryService;
     private final KafkaProducerService kafkaProducerService;
     private final ProcessedEventRepository processedEventRepository;
+    private final ObjectMapper objectMapper;
 
-    public KafkaConsumerService(InventoryService inventoryService, KafkaProducerService kafkaProducerService, ProcessedEventRepository processedEventRepository) {
+    public KafkaConsumerService(InventoryService inventoryService, KafkaProducerService kafkaProducerService,
+                                 ProcessedEventRepository processedEventRepository, ObjectMapper objectMapper) {
         this.inventoryService = inventoryService;
         this.kafkaProducerService = kafkaProducerService;
         this.processedEventRepository = processedEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @KafkaListener(topics = "order.created", groupId = "inventory-group")
     @Transactional
-    public void handleOrderCreated(OrderCreatedEvent event) {
-        String eventId = event.getOrderId().toString() + "-order.created";
-        if (processedEventRepository.existsById(eventId)) {
-            log.info("Event {} already processed. Skipping...", eventId);
-            return;
-        }
-
+    public void handleOrderCreated(String message) {
         try {
-            inventoryService.reserveInventory(event);
-            kafkaProducerService.sendInventoryReserved(new com.ecommerce.inventoryservice.dto.event.InventoryReservedEvent(event.getOrderId()));
-        } catch (InventoryException e) {
-            log.error("Failed to reserve inventory for order {}: {}", event.getOrderId(), e.getMessage());
-            kafkaProducerService.sendInventoryReservationFailed(new com.ecommerce.inventoryservice.dto.event.InventoryReservationFailedEvent(event.getOrderId(), e.getMessage()));
-            // Note: If transaction rolls back, we still want to send the failure event. 
-            // In a real system we'd need to handle this carefully (e.g. TransactionalEventListener or Outbox pattern)
-            // But since Spring Kafka listener transaction might rollback the send as well if they share transaction manager, 
-            // we should be careful. Assuming here standard behavior without chained transaction manager.
-        }
+            OrderCreatedEvent event = objectMapper.readValue(message, OrderCreatedEvent.class);
+            String eventId = event.getOrderId().toString() + "-order.created";
+            if (processedEventRepository.existsById(eventId)) {
+                log.info("Event {} already processed. Skipping...", eventId);
+                return;
+            }
 
-        processedEventRepository.save(new ProcessedEvent(eventId));
+            try {
+                inventoryService.reserveInventory(event);
+                kafkaProducerService.sendInventoryReserved(new com.ecommerce.inventoryservice.dto.event.InventoryReservedEvent(event.getOrderId()));
+            } catch (InventoryException e) {
+                log.error("Failed to reserve inventory for order {}: {}", event.getOrderId(), e.getMessage());
+                kafkaProducerService.sendInventoryReservationFailed(new com.ecommerce.inventoryservice.dto.event.InventoryReservationFailedEvent(event.getOrderId(), e.getMessage()));
+            }
+
+            processedEventRepository.save(new ProcessedEvent(eventId));
+        } catch (Exception e) {
+            log.error("Failed to process order.created message: {}", e.getMessage(), e);
+        }
     }
 
     @KafkaListener(topics = {"payment.failed", "order.cancelled"}, groupId = "inventory-group")
     @Transactional
-    public void handleReservationRelease(OrderEvent event) {
-        String eventId = event.getOrderId().toString() + "-release";
-        if (processedEventRepository.existsById(eventId)) {
-            return;
+    public void handleReservationRelease(String message) {
+        try {
+            OrderEvent event = objectMapper.readValue(message, OrderEvent.class);
+            String eventId = event.getOrderId().toString() + "-release";
+            if (processedEventRepository.existsById(eventId)) {
+                return;
+            }
+            inventoryService.releaseReservation(event);
+            processedEventRepository.save(new ProcessedEvent(eventId));
+        } catch (Exception e) {
+            log.error("Failed to process reservation release message: {}", e.getMessage(), e);
         }
-
-        inventoryService.releaseReservation(event);
-        processedEventRepository.save(new ProcessedEvent(eventId));
     }
 
     @KafkaListener(topics = "payment.completed", groupId = "inventory-group")
     @Transactional
-    public void handleReservationCommit(OrderEvent event) {
-        String eventId = event.getOrderId().toString() + "-commit";
-        if (processedEventRepository.existsById(eventId)) {
-            return;
+    public void handleReservationCommit(String message) {
+        try {
+            OrderEvent event = objectMapper.readValue(message, OrderEvent.class);
+            String eventId = event.getOrderId().toString() + "-commit";
+            if (processedEventRepository.existsById(eventId)) {
+                return;
+            }
+            inventoryService.commitReservation(event);
+            processedEventRepository.save(new ProcessedEvent(eventId));
+        } catch (Exception e) {
+            log.error("Failed to process reservation commit message: {}", e.getMessage(), e);
         }
-
-        inventoryService.commitReservation(event);
-        processedEventRepository.save(new ProcessedEvent(eventId));
     }
 }

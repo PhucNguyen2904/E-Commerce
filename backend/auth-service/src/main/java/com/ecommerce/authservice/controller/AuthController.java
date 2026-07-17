@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -32,18 +34,19 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(@RequestHeader("X-User-Id") String userIdHeader) {
+        // userIdHeader is injected by API Gateway
+        return ResponseEntity.ok(authService.getUserById(UUID.fromString(userIdHeader)));
+    }
+
+    @GetMapping("/internal/users/{id}")
+    public ResponseEntity<UserResponse> getInternalUserById(@PathVariable UUID id) {
+        return ResponseEntity.ok(authService.getUserById(id));
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refresh(@RequestParam("token") String token) {
         return ResponseEntity.ok(authService.refresh(token));
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new AuthException("UNAUTHORIZED", "Missing or invalid Authorization header");
-        }
-        
-        String token = authHeader.substring(7);
-        return ResponseEntity.ok(authService.getCurrentUser(token));
     }
 }

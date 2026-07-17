@@ -171,6 +171,7 @@ public class OrderService {
             
             SimpleOrderEvent event = new SimpleOrderEvent();
             event.setOrderId(orderId);
+            event.setUserId(order.getUserId());
             kafkaProducerService.sendOrderConfirmed(event);
         }
     }
@@ -184,6 +185,7 @@ public class OrderService {
             
             OrderEvent event = new OrderEvent();
             event.setOrderId(orderId);
+            event.setUserId(order.getUserId());
             List<OrderEvent.OrderItem> eventItems = order.getItems().stream()
                 .map(item -> new OrderEvent.OrderItem(item.getProductId(), item.getQuantity()))
                 .collect(Collectors.toList());

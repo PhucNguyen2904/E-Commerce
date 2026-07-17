@@ -46,7 +46,7 @@ public class AuthService {
         );
 
         User savedUser = userRepository.save(user);
-        return new UserResponse(savedUser.getId(), savedUser.getEmail(), savedUser.getFullName(), savedUser.getRole(), savedUser.getCreatedAt());
+        return mapToUserResponse(savedUser);
     }
 
     @Transactional
@@ -108,5 +108,16 @@ public class AuthService {
         } catch (Exception e) {
             throw new AuthException("INVALID_TOKEN", "Token is invalid or expired");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getUserById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AuthException("USER_NOT_FOUND", "User not found"));
+        return mapToUserResponse(user);
+    }
+
+    private UserResponse mapToUserResponse(User user) {
+        return new UserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getCreatedAt());
     }
 }

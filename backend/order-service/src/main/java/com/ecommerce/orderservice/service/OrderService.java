@@ -49,6 +49,8 @@ public class OrderService {
         Order order = new Order();
         order.setUserId(userId);
         order.setShippingAddress(request.getShippingAddress());
+        order.setPaymentMethod(request.getPaymentMethod());
+        order.setPaymentStatus("PENDING");
         order.setStatus(OrderStatus.PENDING);
         
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -129,6 +131,19 @@ public class OrderService {
         }
         
         order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void markOrderAsPaid(UUID id, UUID userId) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderException("ORDER_NOT_FOUND", "Order not found"));
+        
+        if (!order.getUserId().equals(userId)) {
+            throw new OrderException("FORBIDDEN", "You do not have permission to modify this order");
+        }
+        
+        order.setPaymentStatus("PAID");
         orderRepository.save(order);
     }
 
@@ -224,6 +239,13 @@ public class OrderService {
         response.setStatus(order.getStatus());
         response.setTotalAmount(order.getTotalAmount());
         response.setShippingAddress(order.getShippingAddress());
+        response.setPaymentMethod(order.getPaymentMethod());
+        response.setPaymentStatus(order.getPaymentStatus());
+        
+        if ("VNPAY".equals(order.getPaymentMethod()) && "PENDING".equals(order.getPaymentStatus())) {
+            response.setPaymentUrl("/payment/" + order.getId());
+        }
+        
         response.setCreatedAt(order.getCreatedAt());
         
         List<OrderItemResponse> itemResponses = order.getItems().stream().map(item -> {

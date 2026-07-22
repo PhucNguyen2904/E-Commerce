@@ -25,17 +25,19 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductEventPublisher productEventPublisher;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, ProductEventPublisher productEventPublisher) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.productEventPublisher = productEventPublisher;
     }
 
-    @Cacheable(value = "products", key = "#categoryId + '-' + #keyword + '-' + #page + '-' + #size")
+    @Cacheable(value = "products", key = "#categoryId + '-' + #keyword + '-' + #gender + '-' + #isSale + '-' + #page + '-' + #size")
     @Transactional(readOnly = true)
-    public PageResponse<ProductResponse> getProducts(UUID categoryId, String keyword, int page, int size) {
+    public PageResponse<ProductResponse> getProducts(UUID categoryId, String keyword, String gender, Boolean isSale, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Product> productPage = productRepository.searchProducts(categoryId, keyword, pageable);
+        Page<Product> productPage = productRepository.searchProducts(categoryId, keyword, gender, isSale, pageable);
 
         List<ProductResponse> content = productPage.getContent().stream()
                 .map(this::mapToResponse)
@@ -51,9 +53,16 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductResponse getProductById(UUID id) {
-        Product product = productRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new ProductException("PRODUCT_NOT_FOUND", "Product not found or inactive"));
+    public ProductResponse getProductByIdentifier(String identifier) {
+        Product product;
+        try {
+            UUID id = UUID.fromString(identifier);
+            product = productRepository.findByIdAndIsActiveTrue(id)
+                    .orElseThrow(() -> new ProductException("PRODUCT_NOT_FOUND", "Product not found or inactive"));
+        } catch (IllegalArgumentException e) {
+            product = productRepository.findBySlugAndIsActiveTrue(identifier)
+                    .orElseThrow(() -> new ProductException("PRODUCT_NOT_FOUND", "Product not found or inactive"));
+        }
         return mapToResponse(product);
     }
 
@@ -71,6 +80,7 @@ public class ProductService {
         updateProductFromRequest(product, request, category);
 
         Product savedProduct = productRepository.save(product);
+        productEventPublisher.publishProductCreatedEvent(savedProduct);
         return mapToResponse(savedProduct);
     }
 
@@ -90,6 +100,7 @@ public class ProductService {
         updateProductFromRequest(product, request, category);
         
         Product updatedProduct = productRepository.save(product);
+        productEventPublisher.publishProductUpdatedEvent(updatedProduct);
         return mapToResponse(updatedProduct);
     }
 
@@ -100,6 +111,7 @@ public class ProductService {
                 .orElseThrow(() -> new ProductException("PRODUCT_NOT_FOUND", "Product not found"));
         product.setActive(false);
         productRepository.save(product);
+        productEventPublisher.publishProductDeletedEvent(id);
     }
 
     private void updateProductFromRequest(Product product, ProductRequest request, Category category) {
@@ -109,6 +121,9 @@ public class ProductService {
         product.setPrice(request.getPrice());
         product.setCategory(category);
         product.setImageUrl(request.getImageUrl());
+        product.setGender(request.getGender());
+        product.setOriginalPrice(request.getOriginalPrice());
+        product.setDiscountPercentage(request.getDiscountPercentage());
     }
 
     private ProductResponse mapToResponse(Product product) {
@@ -121,6 +136,9 @@ public class ProductService {
                 product.getCategory().getId(),
                 product.getCategory().getName(),
                 product.getImageUrl(),
+                product.getGender(),
+                product.getOriginalPrice(),
+                product.getDiscountPercentage(),
                 product.isActive()
         );
     }

@@ -32,6 +32,15 @@ public class Product {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "original_price", precision = 12, scale = 2)
+    private BigDecimal originalPrice;
+
+    @Column(name = "discount_percentage")
+    private Integer discountPercentage;
+
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
@@ -66,6 +75,12 @@ public class Product {
     public void setCategory(Category category) { this.category = category; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    public Integer getDiscountPercentage() { return discountPercentage; }
+    public void setDiscountPercentage(Integer discountPercentage) { this.discountPercentage = discountPercentage; }
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }

@@ -26,14 +26,16 @@ public class ProductController {
     public ResponseEntity<PageResponse<ProductResponse>> getProducts(
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) Boolean isSale,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(productService.getProducts(categoryId, keyword, page, size));
+        return ResponseEntity.ok(productService.getProducts(categoryId, keyword, gender, isSale, page, size));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable UUID id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+    @GetMapping("/{identifier}")
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable String identifier) {
+        return ResponseEntity.ok(productService.getProductByIdentifier(identifier));
     }
 
     @PostMapping

@@ -12,6 +12,9 @@ public class OrderResponse {
     private OrderStatus status;
     private BigDecimal totalAmount;
     private String shippingAddress;
+    private String paymentMethod;
+    private String paymentStatus;
+    private String paymentUrl;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
 
@@ -29,4 +32,10 @@ public class OrderResponse {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public List<OrderItemResponse> getItems() { return items; }
     public void setItems(List<OrderItemResponse> items) { this.items = items; }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    public String getPaymentUrl() { return paymentUrl; }
+    public void setPaymentUrl(String paymentUrl) { this.paymentUrl = paymentUrl; }
 }

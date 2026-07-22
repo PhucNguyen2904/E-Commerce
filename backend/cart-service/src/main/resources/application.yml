@@ -5,10 +5,15 @@ spring:
   application:
     name: cart-service
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${SPRING_CONFIG_SERVER_URI:http://config-server:8888}"
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-server:8761/eureka/}
 
 resilience4j:
   circuitbreaker:

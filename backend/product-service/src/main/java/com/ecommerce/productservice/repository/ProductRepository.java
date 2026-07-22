@@ -11,13 +11,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
-    
     Optional<Product> findByIdAndIsActiveTrue(UUID id);
+    
+    Optional<Product> findBySlugAndIsActiveTrue(String slug);
     
     boolean existsBySlug(String slug);
 
     @Query("SELECT p FROM Product p WHERE p.isActive = true " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
-           "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Product> searchProducts(@Param("categoryId") UUID categoryId, @Param("keyword") String keyword, Pageable pageable);
+           "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
+           "AND (:gender IS NULL OR LOWER(p.gender) = LOWER(CAST(:gender AS string))) " +
+           "AND (:isSale IS NULL OR (:isSale = true AND p.discountPercentage > 0) OR (:isSale = false AND (p.discountPercentage IS NULL OR p.discountPercentage = 0)))")
+    Page<Product> searchProducts(@Param("categoryId") UUID categoryId, @Param("keyword") String keyword, @Param("gender") String gender, @Param("isSale") Boolean isSale, Pageable pageable);
 }

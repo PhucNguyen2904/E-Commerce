@@ -19,12 +19,38 @@ services:
     networks:
       - ecommerce-network
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - ecommerce-network
 
@@ -41,12 +67,14 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 40s
     networks:
       - ecommerce-network
 
@@ -74,6 +102,12 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q UP || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - ecommerce-network
     restart: on-failure
@@ -87,7 +121,14 @@ services:
     ports:
       - "8761:8761"
     depends_on:
-      - config-server
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q UP || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - ecommerce-network
     restart: on-failure
@@ -107,8 +148,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=ecommerce
       - SPRING_DATASOURCE_PASSWORD=ecommerce
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -127,9 +170,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/product_db
       - SPRING_DATASOURCE_USERNAME=ecommerce
       - SPRING_DATASOURCE_PASSWORD=ecommerce
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -150,8 +196,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ecommerce
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -171,8 +219,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=ecommerce
       - SPRING_DATASOURCE_PASSWORD=ecommerce
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -193,8 +243,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ecommerce
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -215,8 +267,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=ecommerce
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -239,8 +293,58 @@ services:
       - SPRING_MAIL_HOST=mailhog
       - SPRING_MAIL_PORT=1025
     depends_on:
-      - config-server
-      - discovery-server
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    restart: on-failure
+
+  search-service:
+    build:
+      context: .
+      args:
+        JAR_FILE: search-service/target/search-service-1.0-SNAPSHOT.jar
+    container_name: search-service
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    restart: on-failure
+
+  chatbot-service:
+    build:
+      context: .
+      args:
+        JAR_FILE: chatbot-service/target/chatbot-service-1.0-SNAPSHOT.jar
+    container_name: chatbot-service
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chatbot_db
+      - SPRING_DATASOURCE_USERNAME=ecommerce
+      - SPRING_DATASOURCE_PASSWORD=ecommerce
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - ecommerce-network
     restart: on-failure
@@ -264,9 +368,14 @@ services:
       - order-service
       - payment-service
       - notification-service
+      - search-service
+      - chatbot-service
     networks:
       - ecommerce-network
     restart: on-failure
+
+volumes:
+  esdata:
 
 networks:
   ecommerce-network:

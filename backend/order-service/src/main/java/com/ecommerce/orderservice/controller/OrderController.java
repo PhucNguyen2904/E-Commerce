@@ -48,4 +48,12 @@ public class OrderController {
         orderService.cancelOrder(id, userId);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{id}/pay")
+    public ResponseEntity<Void> payOrder(
+            @PathVariable UUID id,
+            @RequestHeader("X-User-Id") UUID userId) {
+        orderService.markOrderAsPaid(id, userId);
+        return ResponseEntity.ok().build();
+    }
 }

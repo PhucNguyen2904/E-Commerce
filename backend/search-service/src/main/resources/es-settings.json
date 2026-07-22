@@ -1,0 +1,19 @@
+{
+  "analysis": {
+    "filter": {
+      "vn_ascii_folding": {
+        "type": "asciifolding",
+        "preserve_original": true
+      }
+    },
+    "analyzer": {
+      "vn_search_analyzer": {
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "vn_ascii_folding"
+        ]
+      }
+    }
+  }
+}

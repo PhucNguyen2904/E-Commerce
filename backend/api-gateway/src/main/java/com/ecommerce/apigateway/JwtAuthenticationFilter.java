@@ -28,30 +28,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/register",
             "/api/auth/login",
             "/swagger-ui",
-            "/v3/api-docs"
+            "/v3/api-docs",
+            "/api/chatbot"
     );
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        if (isSecured(request)) {
-            if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                return this.onError(exchange, "No Authorization header", HttpStatus.UNAUTHORIZED);
-            }
-
-            String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return this.onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
-            }
-
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-
             try {
                 SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
                 io.jsonwebtoken.Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
                 
-                // Trích xuất thông tin từ JWT và đính vào header để forward xuống các service con
                 String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
                 
@@ -60,10 +51,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         .header("X-User-Role", role)
                         .build();
                         
-                // Tạo exchange mới chứa request đã được mutate
-                return chain.filter(exchange.mutate().request(request).build());
+                exchange = exchange.mutate().request(request).build();
             } catch (Exception e) {
-                return this.onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
+                if (isSecured(request)) {
+                    return this.onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
+                }
+            }
+        } else {
+            if (isSecured(request)) {
+                return this.onError(exchange, "No or invalid Authorization header", HttpStatus.UNAUTHORIZED);
             }
         }
 
@@ -78,7 +74,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isSecured(ServerHttpRequest request) {
-        return openApiEndpoints.stream().noneMatch(uri -> request.getURI().getPath().contains(uri));
+        String path = request.getURI().getPath();
+        if (request.getMethod().name().equals("GET")) {
+            if (path.startsWith("/api/products") || path.startsWith("/api/categories") || path.startsWith("/api/inventory") || path.startsWith("/api/search")) {
+                return false;
+            }
+        }
+        return openApiEndpoints.stream().noneMatch(uri -> path.contains(uri));
     }
 
     @Override

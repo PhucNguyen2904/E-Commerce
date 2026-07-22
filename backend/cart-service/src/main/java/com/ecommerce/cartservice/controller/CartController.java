@@ -2,6 +2,7 @@ package com.ecommerce.cartservice.controller;
 
 import com.ecommerce.cartservice.dto.CartItemRequest;
 import com.ecommerce.cartservice.dto.CartResponse;
+import com.ecommerce.cartservice.dto.DiscountRequest;
 import com.ecommerce.cartservice.service.CartService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,13 @@ public class CartController {
             @RequestHeader("X-User-Id") UUID userId,
             @PathVariable UUID productId) {
         return ResponseEntity.ok(cartService.removeItemFromCart(userId, productId));
+    }
+
+    @PostMapping("/discount")
+    public ResponseEntity<CartResponse> applyDiscount(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestBody DiscountRequest request) {
+        return ResponseEntity.ok(cartService.applyDiscount(userId, request.getDiscountCode()));
     }
 
     @DeleteMapping

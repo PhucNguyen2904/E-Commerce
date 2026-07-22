@@ -23,6 +23,10 @@ public class ProductRequest {
     private UUID categoryId;
     
     private String imageUrl;
+    
+    private String gender;
+    private BigDecimal originalPrice;
+    private Integer discountPercentage;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -36,4 +40,10 @@ public class ProductRequest {
     public void setCategoryId(UUID categoryId) { this.categoryId = categoryId; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    public Integer getDiscountPercentage() { return discountPercentage; }
+    public void setDiscountPercentage(Integer discountPercentage) { this.discountPercentage = discountPercentage; }
 }

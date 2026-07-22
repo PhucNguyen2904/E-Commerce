@@ -23,6 +23,9 @@ public class Cart {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "discount_code", length = 50)
+    private String discountCode;
+
     @PrePersist
     @PreUpdate
     protected void onUpdate() {
@@ -43,4 +46,6 @@ public class Cart {
     public void setItems(List<CartItem> items) { this.items = items; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getDiscountCode() { return discountCode; }
+    public void setDiscountCode(String discountCode) { this.discountCode = discountCode; }
 }

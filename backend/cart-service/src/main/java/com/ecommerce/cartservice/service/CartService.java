@@ -47,15 +47,27 @@ public class CartService {
                 .map(this::mapToItemResponse)
                 .collect(Collectors.toList());
 
-        BigDecimal totalPrice = itemResponses.stream()
+        BigDecimal originalTotalPrice = itemResponses.stream()
                 .map(item -> item.getProductPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPrice = originalTotalPrice;
+        if (cart.getDiscountCode() != null && !cart.getDiscountCode().isEmpty()) {
+            // Mock logic: 10% off for SALE10, 20% off for SALE20
+            if ("SALE10".equalsIgnoreCase(cart.getDiscountCode())) {
+                totalPrice = originalTotalPrice.multiply(BigDecimal.valueOf(0.9));
+            } else if ("SALE20".equalsIgnoreCase(cart.getDiscountCode())) {
+                totalPrice = originalTotalPrice.multiply(BigDecimal.valueOf(0.8));
+            }
+        }
 
         CartResponse response = new CartResponse();
         response.setId(cart.getId());
         response.setUserId(cart.getUserId());
         response.setItems(itemResponses);
+        response.setOriginalTotalPrice(originalTotalPrice);
         response.setTotalPrice(totalPrice);
+        response.setDiscountCode(cart.getDiscountCode());
 
         return response;
     }
@@ -111,7 +123,7 @@ public class CartService {
         CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
                 .orElseThrow(() -> new CartException("ITEM_NOT_FOUND", "Item not found in cart"));
 
-        cartItemRepository.delete(item);
+        cart.getItems().remove(item);
 
         return getCart(userId);
     }
@@ -121,7 +133,26 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new CartException("CART_NOT_FOUND", "Cart not found for user"));
         cart.getItems().clear();
+        cart.setDiscountCode(null);
         cartRepository.save(cart);
+    }
+
+    @Transactional
+    public CartResponse applyDiscount(UUID userId, String discountCode) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new CartException("CART_NOT_FOUND", "Cart not found for user"));
+
+        // Validate mock discount codes
+        if (discountCode != null && !discountCode.isEmpty()) {
+            if (!"SALE10".equalsIgnoreCase(discountCode) && !"SALE20".equalsIgnoreCase(discountCode)) {
+                throw new CartException("INVALID_DISCOUNT", "Discount code is invalid or expired");
+            }
+        }
+
+        cart.setDiscountCode(discountCode);
+        cartRepository.save(cart);
+        
+        return getCart(userId);
     }
 
     private void checkInventory(UUID productId, int quantity) {

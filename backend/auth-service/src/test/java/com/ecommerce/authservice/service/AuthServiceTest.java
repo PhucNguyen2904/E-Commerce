@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -51,7 +52,7 @@ class AuthServiceTest {
         request.setPassword("password");
         request.setFullName("Test User");
 
-        when(userRepository.existsByEmail("test@test.com")).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase(anyString())).thenReturn(true);
 
         AuthException exception = assertThrows(AuthException.class, () -> authService.register(request));
         assertEquals("EMAIL_ALREADY_EXISTS", exception.getCode());
@@ -65,7 +66,7 @@ class AuthServiceTest {
 
         User user = new User("test@test.com", passwordEncoder.encode("correctpassword"), "Test User", "CUSTOMER");
         
-        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase("test@test.com")).thenReturn(Optional.of(user));
 
         AuthException exception = assertThrows(AuthException.class, () -> authService.login(request));
         assertEquals("INVALID_CREDENTIALS", exception.getCode());

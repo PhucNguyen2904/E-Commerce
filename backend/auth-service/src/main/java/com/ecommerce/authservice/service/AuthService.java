@@ -2,6 +2,7 @@ package com.ecommerce.authservice.service;
 
 import com.ecommerce.authservice.domain.entity.RefreshToken;
 import com.ecommerce.authservice.domain.entity.User;
+import com.ecommerce.authservice.dto.UpdateProfileRequest;
 import com.ecommerce.authservice.dto.LoginRequest;
 import com.ecommerce.authservice.dto.RegisterRequest;
 import com.ecommerce.authservice.dto.TokenResponse;
@@ -104,7 +105,7 @@ public class AuthService {
             User user = userRepository.findById(UUID.fromString(userId))
                     .orElseThrow(() -> new AuthException("USER_NOT_FOUND", "User not found"));
             
-            return new UserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getCreatedAt());
+            return new UserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getPhone(), user.getCreatedAt());
         } catch (Exception e) {
             throw new AuthException("INVALID_TOKEN", "Token is invalid or expired");
         }
@@ -118,6 +119,23 @@ public class AuthService {
     }
 
     private UserResponse mapToUserResponse(User user) {
-        return new UserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getCreatedAt());
+        return new UserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getPhone(), user.getCreatedAt());
+    }
+
+    @Transactional
+    public UserResponse updateProfile(String userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new AuthException("USER_NOT_FOUND", "User not found"));
+
+        if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
+            user.setFullName(request.getFullName().trim());
+        }
+        
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone().trim());
+        }
+
+        User updatedUser = userRepository.save(user);
+        return mapToUserResponse(updatedUser);
     }
 }

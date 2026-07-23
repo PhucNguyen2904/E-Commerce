@@ -21,14 +21,14 @@ import { apiClient } from '../api/axios';
 
 export const useCreateOrder = () => {
   return useMutation({
-    mutationFn: async (payload: { shippingAddress: string, paymentMethod: string }) => {
+    mutationFn: async (payload: { fullName: string, phone: string, shippingAddress: string, paymentMethod: string }) => {
       const response = await apiClient.post('/orders', payload);
       return response.data;
     }
   });
 };
 
-export const useOrderTracking = (orderId: string) => {
+export const useOrderTracking = (orderId: string, customEnabled: boolean = true) => {
   return useQuery({
     queryKey: ['order', orderId],
     queryFn: async () => {
@@ -42,7 +42,7 @@ export const useOrderTracking = (orderId: string) => {
       }
       return 2000;
     },
-    enabled: !!orderId,
+    enabled: !!orderId && customEnabled,
   });
 };
 
@@ -56,3 +56,14 @@ export const useOrderHistory = () => {
     },
   });
 };
+
+export const getVnPayUrl = async (orderId: string) => {
+  const response = await apiClient.get<{ paymentUrl: string }>(`/payments/order/${orderId}/vnpay-url`);
+  return response.data.paymentUrl;
+};
+
+export const verifyVnPayReturn = async (queryString: string) => {
+  const response = await apiClient.get<{ vnp_ResponseCode: string; vnp_TransactionStatus: string; vnp_TxnRef: string }>(`/payments/vnpay/return${queryString}`);
+  return response.data;
+};
+

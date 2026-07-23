@@ -106,6 +106,8 @@ export const CheckoutPage = () => {
 
     try {
       const order = await createOrder({
+        fullName: data.fullName,
+        phone: data.phone,
         shippingAddress: fullAddress,
         paymentMethod: data.paymentMethod,
       });

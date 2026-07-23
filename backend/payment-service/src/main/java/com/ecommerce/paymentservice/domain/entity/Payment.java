@@ -38,6 +38,18 @@ public class Payment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "provider")
+    private String provider;
+
+    @Column(name = "provider_txn_ref", unique = true)
+    private String providerTxnRef;
+
+    @Column(name = "provider_transaction_no")
+    private String providerTransactionNo;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -59,4 +71,12 @@ public class Payment {
     public void setFailureReason(String failureReason) { this.failureReason = failureReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
+    public String getProviderTxnRef() { return providerTxnRef; }
+    public void setProviderTxnRef(String providerTxnRef) { this.providerTxnRef = providerTxnRef; }
+    public String getProviderTransactionNo() { return providerTransactionNo; }
+    public void setProviderTransactionNo(String providerTransactionNo) { this.providerTransactionNo = providerTransactionNo; }
+    public LocalDateTime getPaidAt() { return paidAt; }
+    public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
 }

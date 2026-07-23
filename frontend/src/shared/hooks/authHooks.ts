@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/axios';
 import { useAuthStore } from '../../stores/authStore';
 import { toast } from 'sonner';
@@ -55,5 +55,23 @@ export const useProfile = () => {
       return response.data;
     },
     enabled: isAuthenticated, // Chỉ gọi khi đã đăng nhập
+  });
+};
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: { fullName: string; phone: string }) => {
+      const response = await apiClient.put('/auth/me', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Cập nhật hồ sơ thành công!');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: () => {
+      toast.error('Có lỗi xảy ra khi cập nhật hồ sơ.');
+    }
   });
 };

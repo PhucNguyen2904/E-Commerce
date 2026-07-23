@@ -1,5 +1,6 @@
 package com.ecommerce.authservice.controller;
 
+import com.ecommerce.authservice.dto.UpdateProfileRequest;
 import com.ecommerce.authservice.dto.LoginRequest;
 import com.ecommerce.authservice.dto.RegisterRequest;
 import com.ecommerce.authservice.dto.TokenResponse;
@@ -38,6 +39,13 @@ public class AuthController {
     public ResponseEntity<UserResponse> getCurrentUser(@RequestHeader("X-User-Id") String userIdHeader) {
         // userIdHeader is injected by API Gateway
         return ResponseEntity.ok(authService.getUserById(UUID.fromString(userIdHeader)));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            @RequestHeader("X-User-Id") String userIdHeader, 
+            @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(authService.updateProfile(userIdHeader, request));
     }
 
     @GetMapping("/internal/users/{id}")

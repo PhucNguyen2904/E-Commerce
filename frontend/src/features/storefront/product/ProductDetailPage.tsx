@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, Truck, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useProduct, useInventory } from '../../../shared/hooks/apiHooks';
 import { Button } from '../../../shared/components/Button';
@@ -14,6 +14,7 @@ const formatCurrency = (amount: number) => {
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: product, isLoading, isError } = useProduct(id!);
   const { data: inventory } = useInventory(product?.id || '');
   
@@ -21,7 +22,7 @@ export const ProductDetailPage = () => {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
 
-  const { mutate: addToCart, isPending: isAdding } = useAddToCart();
+  const { mutate: addToCart, mutateAsync: addToCartAsync, isPending: isAdding } = useAddToCart();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (isLoading) {
@@ -46,14 +47,14 @@ export const ProductDetailPage = () => {
     return (
       <div className="layout-container section-spacing text-center py-24">
         <h2 className="text-headline-md font-bold text-error mb-4">Sản phẩm không tồn tại</h2>
-        <Button onClick={() => window.location.href = '/products'} variant="ghost" className="mx-auto">Quay lại Cửa hàng</Button>
+        <Button onClick={() => navigate('/products')} variant="ghost" className="mx-auto">Quay lại Cửa hàng</Button>
       </div>
     );
   }
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      window.location.href = `/login?redirect=/products/${id}`;
+      navigate(`/login?redirect=/products/${id}`);
       return;
     }
     
@@ -70,6 +71,32 @@ export const ProductDetailPage = () => {
     addToCart({ productId: product.id, quantity, product }, {
       onSuccess: () => toast.success('Đã thêm sản phẩm vào giỏ hàng')
     });
+  };
+
+
+  const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để mua hàng');
+      navigate('/login');
+      return;
+    }
+    
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      toast.error('Vui lòng chọn màu sắc');
+      return;
+    }
+    
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      toast.error('Vui lòng chọn kích cỡ');
+      return;
+    }
+
+    try {
+      await addToCartAsync({ productId: product.id, quantity, product });
+      navigate('/checkout');
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng');
+    }
   };
 
   const isOutOfStock = inventory && !inventory.inStock;
@@ -101,7 +128,7 @@ export const ProductDetailPage = () => {
           <nav className="text-label-sm text-on-surface-variant flex items-center gap-2">
             <Link to="/products" className="hover:text-primary">SẢN PHẨM</Link>
             <span>/</span>
-            <Link to={`/products?categoryId=${product.category}`} className="hover:text-primary uppercase">{product.category}</Link>
+            <Link to={`/products?categoryId=${product.categoryId || product.category}`} className="hover:text-primary uppercase">{product.categoryName || product.category}</Link>
             <span>/</span>
             <span className="text-on-surface truncate">{product.name}</span>
           </nav>
@@ -197,7 +224,12 @@ export const ProductDetailPage = () => {
               <ShoppingCart size={20} />
               {isAdding ? 'ĐANG THÊM...' : isOutOfStock ? 'TẠM HẾT HÀNG' : 'THÊM VÀO GIỎ HÀNG'}
             </Button>
-            <Button variant="ghost" disabled={isOutOfStock} className="h-14 font-bold text-[16px]">
+            <Button 
+              variant="ghost" 
+              disabled={isOutOfStock || isAdding} 
+              onClick={handleBuyNow}
+              className="h-14 font-bold text-[16px]"
+            >
               MUA NGAY
             </Button>
           </div>

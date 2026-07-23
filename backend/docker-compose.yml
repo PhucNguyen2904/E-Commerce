@@ -266,6 +266,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=ecommerce
       - SPRING_DATASOURCE_PASSWORD=ecommerce
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
+      - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
     depends_on:
       config-server:
         condition: service_healthy
@@ -337,6 +339,7 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_MODEL=${GEMINI_API_MODEL}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chatbot_db
       - SPRING_DATASOURCE_USERNAME=ecommerce
       - SPRING_DATASOURCE_PASSWORD=ecommerce

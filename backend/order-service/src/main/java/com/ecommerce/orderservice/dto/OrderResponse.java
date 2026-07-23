@@ -17,6 +17,20 @@ public class OrderResponse {
     private String paymentUrl;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
+    private ShippingInfo shippingInfo;
+
+    public static class ShippingInfo {
+        private String fullName;
+        private String phone;
+        private String address;
+
+        public String getFullName() { return fullName; }
+        public void setFullName(String fullName) { this.fullName = fullName; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getAddress() { return address; }
+        public void setAddress(String address) { this.address = address; }
+    }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -38,4 +52,6 @@ public class OrderResponse {
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public String getPaymentUrl() { return paymentUrl; }
     public void setPaymentUrl(String paymentUrl) { this.paymentUrl = paymentUrl; }
+    public ShippingInfo getShippingInfo() { return shippingInfo; }
+    public void setShippingInfo(ShippingInfo shippingInfo) { this.shippingInfo = shippingInfo; }
 }

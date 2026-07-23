@@ -9,7 +9,9 @@ export interface Product {
   name: string;
   price: number;
   originalPrice?: number;
-  category: string;
+  category?: string;
+  categoryId?: string;
+  categoryName?: string;
   imageUrl: string;
   isNew?: boolean;
   discountPercentage?: number;

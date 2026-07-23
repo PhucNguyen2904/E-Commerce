@@ -207,7 +207,7 @@ export const useCancelOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: string) => {
-      const response = await apiClient.put(`/orders/${orderId}/cancel`);
+      const response = await apiClient.put(`/orders/admin/${orderId}/cancel`);
       return response.data;
     },
     onSuccess: (_, orderId) => {
@@ -217,6 +217,23 @@ export const useCancelOrder = () => {
     },
     onError: () => {
       toast.error('Hủy đơn hàng thất bại.');
+    }
+  });
+};
+
+export const useDeleteOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await apiClient.delete(`/orders/admin/${orderId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Xóa đơn hàng thành công!');
+      queryClient.invalidateQueries({ queryKey: ['adminOrders'] });
+    },
+    onError: () => {
+      toast.error('Xóa đơn hàng thất bại.');
     }
   });
 };

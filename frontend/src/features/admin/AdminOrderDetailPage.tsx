@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, User, MapPin, CreditCard, AlertTriangle } from 'lucide-react';
-import { useAdminOrderDetail, usePaymentStatus, useCancelOrder } from '../../shared/hooks/adminHooks';
+import { ArrowLeft, User, MapPin, CreditCard, AlertTriangle, Trash2 } from 'lucide-react';
+import { useAdminOrderDetail, usePaymentStatus, useCancelOrder, useDeleteOrder } from '../../shared/hooks/adminHooks';
 import { OrderStatusBadge } from '../../shared/components/OrderStatusBadge';
 import { Button } from '../../shared/components/Button';
 import { DataTable, type Column } from '../../shared/components/DataTable';
@@ -18,6 +18,7 @@ export const AdminOrderDetailPage = () => {
   const { data: payment, isLoading: loadingPayment } = usePaymentStatus(id || '');
   
   const { mutateAsync: cancelOrder, isPending: isCanceling } = useCancelOrder();
+  const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
 
   const handleCancelOrder = async () => {
     if (window.confirm('CẢNH BÁO: Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.')) {
@@ -68,6 +69,19 @@ export const AdminOrderDetailPage = () => {
             {isCanceling ? 'Đang hủy...' : 'HỦY ĐƠN HÀNG'}
           </Button>
         )}
+        <Button 
+          variant="ghost"
+          className="text-white bg-error hover:bg-error/90 border-error ml-2"
+          onClick={() => {
+            if (window.confirm('Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng này? Không thể hoàn tác!')) {
+              deleteOrder(id!, { onSuccess: () => navigate('/admin/orders') });
+            }
+          }}
+          disabled={isDeleting}
+        >
+          <Trash2 size={18} className="mr-2" />
+          {isDeleting ? 'Đang xóa...' : 'XÓA ĐƠN HÀNG'}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -79,7 +93,6 @@ export const AdminOrderDetailPage = () => {
           <div className="flex flex-col gap-2">
             <p className="text-body-lg font-bold">{order.shippingInfo?.fullName || 'Khách vãng lai'}</p>
             <p className="text-body-md text-on-surface-variant">{order.shippingInfo?.phone || 'Chưa cung cấp SĐT'}</p>
-            <p className="text-body-md text-on-surface-variant">ID: {order.userId || 'Guest'}</p>
           </div>
         </div>
 

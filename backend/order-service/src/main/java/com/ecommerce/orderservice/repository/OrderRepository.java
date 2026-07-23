@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByUserIdOrderByCreatedAtDesc(UUID userId);
+    List<Order> findByStatusAndCreatedAtBefore(com.ecommerce.orderservice.domain.enums.OrderStatus status, java.time.LocalDateTime time);
 }

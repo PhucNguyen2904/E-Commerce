@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: payment-service
+
+payment:
+  provider: vnpay
+
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE:dummy_tmn_code}
+  hash-secret: ${VNPAY_HASH_SECRET:dummy_hash_secret}
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:5173/payment/vnpay-return
+  version: "2.1.0"
+  command: pay
+  curr-code: VND
+  locale: vn

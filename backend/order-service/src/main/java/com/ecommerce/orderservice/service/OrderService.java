@@ -48,6 +48,8 @@ public class OrderService {
 
         Order order = new Order();
         order.setUserId(userId);
+        order.setCustomerName(request.getFullName());
+        order.setCustomerPhone(request.getPhone());
         order.setShippingAddress(request.getShippingAddress());
         order.setPaymentMethod(request.getPaymentMethod());
         order.setPaymentStatus("PENDING");
@@ -135,6 +137,44 @@ public class OrderService {
     }
 
     @Transactional
+    public void cancelOrderAdmin(UUID id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderException("ORDER_NOT_FOUND", "Order not found"));
+        
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new OrderException("INVALID_STATE", "Only PENDING orders can be cancelled");
+        }
+        
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void deleteOrderAdmin(UUID id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderException("ORDER_NOT_FOUND", "Order not found"));
+        
+        orderRepository.delete(order);
+        org.slf4j.LoggerFactory.getLogger(OrderService.class).info("Admin deleted order {}", id);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 600000)
+    @Transactional
+    public void autoCancelPendingOrders() {
+        java.time.LocalDateTime cutoffTime = java.time.LocalDateTime.now().minusMinutes(30);
+        List<Order> oldOrders = orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.PENDING, cutoffTime);
+        
+        for (Order order : oldOrders) {
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+        }
+        
+        if (!oldOrders.isEmpty()) {
+            org.slf4j.LoggerFactory.getLogger(OrderService.class).info("Auto-cancelled {} pending orders", oldOrders.size());
+        }
+    }
+
+    @Transactional
     public void markOrderAsPaid(UUID id, UUID userId) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderException("ORDER_NOT_FOUND", "Order not found"));
@@ -145,6 +185,21 @@ public class OrderService {
         
         order.setPaymentStatus("PAID");
         orderRepository.save(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrdersAdmin() {
+        return orderRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderByIdAdmin(UUID id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderException("ORDER_NOT_FOUND", "Order not found"));
+        return mapToOrderResponse(order);
     }
 
     // Saga Handlers
@@ -241,6 +296,12 @@ public class OrderService {
         response.setShippingAddress(order.getShippingAddress());
         response.setPaymentMethod(order.getPaymentMethod());
         response.setPaymentStatus(order.getPaymentStatus());
+
+        OrderResponse.ShippingInfo shippingInfo = new OrderResponse.ShippingInfo();
+        shippingInfo.setFullName(order.getCustomerName());
+        shippingInfo.setPhone(order.getCustomerPhone());
+        shippingInfo.setAddress(order.getShippingAddress());
+        response.setShippingInfo(shippingInfo);
         
         if ("VNPAY".equals(order.getPaymentMethod()) && "PENDING".equals(order.getPaymentStatus())) {
             response.setPaymentUrl("/payment/" + order.getId());

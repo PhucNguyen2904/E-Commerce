@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Filter } from 'lucide-react';
-import { useAdminOrders } from '../../shared/hooks/adminHooks';
+import { Eye, Filter, Trash2 } from 'lucide-react';
+import { useAdminOrders, useDeleteOrder } from '../../shared/hooks/adminHooks';
 import { DataTable, type Column } from '../../shared/components/DataTable';
 import { OrderStatusBadge } from '../../shared/components/OrderStatusBadge';
 
@@ -11,6 +11,7 @@ const formatCurrency = (amount: number) => {
 
 export const AdminOrdersPage = () => {
   const { data: orders = [], isLoading } = useAdminOrders();
+  const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   const filteredOrders = statusFilter === 'ALL' 
@@ -56,15 +57,29 @@ export const AdminOrdersPage = () => {
     { 
       key: 'actions', 
       header: 'Chi tiết',
-      className: 'w-24 text-center',
+      className: 'w-32 text-center',
       render: (item: any) => (
-        <Link 
-          to={`/admin/orders/${item.id}`}
-          className="inline-flex p-2 text-primary hover:bg-primary-container rounded transition-colors"
-          title="Xem chi tiết"
-        >
-          <Eye size={20} />
-        </Link>
+        <div className="flex justify-center gap-2">
+          <Link 
+            to={`/admin/orders/${item.id}`}
+            className="inline-flex p-2 text-primary hover:bg-primary-container rounded transition-colors"
+            title="Xem chi tiết"
+          >
+            <Eye size={20} />
+          </Link>
+          <button
+            onClick={() => {
+              if (window.confirm('Hành động này sẽ XÓA VĨNH VIỄN đơn hàng. Bạn có chắc chắn?')) {
+                deleteOrder(item.id);
+              }
+            }}
+            disabled={isDeleting}
+            className="inline-flex p-2 text-error hover:bg-error-container rounded transition-colors disabled:opacity-50"
+            title="Xóa vĩnh viễn"
+          >
+            <Trash2 size={20} />
+          </button>
+        </div>
       )
     },
   ];

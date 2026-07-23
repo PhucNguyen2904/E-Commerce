@@ -71,6 +71,14 @@ export default {
       maxWidth: {
         container: '1280px',
       },
+      keyframes: {
+        shine: {
+          '100%': { left: '125%' },
+        },
+      },
+      animation: {
+        shine: 'shine 1.5s infinite',
+      },
     },
   },
 } satisfies import('tailwindcss').Config;

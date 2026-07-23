@@ -60,8 +60,8 @@ export const useAddToCart = () => {
       await apiClient.post('/cart/items', { productId, quantity });
       return true;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['cart'] });
     }
   });
 };

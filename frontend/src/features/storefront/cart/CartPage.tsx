@@ -146,7 +146,7 @@ export const CartPage = () => {
                           className="w-20 h-25 object-cover rounded bg-surface-container"
                         />
                         <div className="flex flex-col gap-1">
-                          <span className="text-label-sm uppercase text-on-surface-variant">{item.product?.category}</span>
+                          <span className="text-label-sm uppercase text-on-surface-variant">{item.product?.categoryName || item.product?.category}</span>
                           <Link to={`/products/${item.productId}`} className="text-body-md font-bold hover:text-primary line-clamp-2">
                             {item.product?.name}
                           </Link>

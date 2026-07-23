@@ -56,4 +56,45 @@ public class OrderController {
         orderService.markOrderAsPaid(id, userId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<OrderResponse>> getAllOrdersAdmin(
+            @RequestHeader(value = "X-User-Role", defaultValue = "CUSTOMER") String userRole) {
+        if (!"ADMIN".equals(userRole)) {
+            throw new com.ecommerce.orderservice.exception.OrderException("FORBIDDEN", "Admin access required");
+        }
+        return ResponseEntity.ok(orderService.getAllOrdersAdmin());
+    }
+
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<OrderResponse> getOrderByIdAdmin(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-User-Role", defaultValue = "CUSTOMER") String userRole) {
+        if (!"ADMIN".equals(userRole)) {
+            throw new com.ecommerce.orderservice.exception.OrderException("FORBIDDEN", "Admin access required");
+        }
+        return ResponseEntity.ok(orderService.getOrderByIdAdmin(id));
+    }
+
+    @PutMapping("/admin/{id}/cancel")
+    public ResponseEntity<Void> cancelOrderAdmin(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-User-Role", defaultValue = "CUSTOMER") String userRole) {
+        if (!"ADMIN".equals(userRole)) {
+            throw new com.ecommerce.orderservice.exception.OrderException("FORBIDDEN", "Admin access required");
+        }
+        orderService.cancelOrderAdmin(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/admin/{id}")
+    public ResponseEntity<Void> deleteOrderAdmin(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-User-Role", defaultValue = "CUSTOMER") String userRole) {
+        if (!"ADMIN".equals(userRole)) {
+            throw new com.ecommerce.orderservice.exception.OrderException("FORBIDDEN", "Admin access required");
+        }
+        orderService.deleteOrderAdmin(id);
+        return ResponseEntity.ok().build();
+    }
 }

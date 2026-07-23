@@ -8,7 +8,8 @@ import { ProductDetailPage } from '../features/storefront/product/ProductDetailP
 import { CartPage } from '../features/storefront/cart/CartPage';
 import { CheckoutPage } from '../features/storefront/checkout/CheckoutPage';
 import { OrderTrackingPage } from '../features/storefront/checkout/OrderTrackingPage';
-import { MockPaymentPage } from '../features/storefront/checkout/MockPaymentPage';
+import { VNPayReturnPage } from '../features/storefront/checkout/VNPayReturnPage';
+import { PaymentRedirectPage } from '../features/storefront/checkout/PaymentRedirectPage';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
 import { AccountLayout } from '../features/account/AccountLayout';
@@ -72,10 +73,18 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'payment/vnpay-return',
+        element: (
+          <ProtectedRoute>
+            <VNPayReturnPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'payment/:orderId',
         element: (
           <ProtectedRoute>
-            <MockPaymentPage />
+            <PaymentRedirectPage />
           </ProtectedRoute>
         ),
       },
